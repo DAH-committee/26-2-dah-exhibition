@@ -1,0 +1,159 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --page-x: clamp(20px, 5.56vw, 96px);
+  --top-bar: 88px;
+  --ink: #0e1b24;
+  --ink-soft: #2b3a44;
+  --paper: #fbf7f2;
+  --paper-soft: #d9e0ee;
+  --gold: #f5c84c;
+  --fg: var(--ink);
+  --fg-soft: var(--ink-soft);
+  --glass: rgba(251, 247, 242, 0.34);
+  --glass-strong: rgba(251, 247, 242, 0.62);
+  --shadow-1: 0 1px 2px rgba(8, 18, 40, 0.10), 0 6px 18px rgba(8, 18, 40, 0.10);
+  --shadow-2: 0 2px 4px rgba(8, 18, 40, 0.12), 0 20px 50px rgba(8, 18, 40, 0.20);
+  --shadow-3: 0 4px 10px rgba(8, 18, 40, 0.16), 0 30px 70px rgba(8, 18, 40, 0.26);
+  --ease: cubic-bezier(0.45, 0, 0.55, 1);
+  --ease-out: cubic-bezier(0.22, 1, 0.36, 1);
+  --radius: 4px;
+}
+
+/* 밤 장면(작품)에서는 글자와 유리 판을 밝은 쪽으로 바꾼다 */
+html[data-theme='night'] {
+  --fg: var(--paper);
+  --fg-soft: var(--paper-soft);
+  --glass: rgba(12, 22, 48, 0.46);
+  --glass-strong: rgba(12, 22, 48, 0.74);
+}
+
+* { box-sizing: border-box; }
+
+html {
+  height: 100%;
+  overflow: hidden;
+  background: #8b97a0;
+  -webkit-text-size-adjust: 100%;
+}
+body { height: 100%; overflow: hidden; }
+
+/* 문서 대신 이 판이 스크롤된다. 스크롤바 자리는 늘 비워 두고(scrollbar-gutter) 바탕을 투명하게 해
+   스크롤바가 생겨도 화면이 밀리지 않고, 하늘 그림이 스크롤바 아래까지 이어진다. */
+#scroller {
+  position: fixed;
+  inset: 0;
+  z-index: 10;
+  overflow-x: hidden;
+  overflow-y: auto;
+  scrollbar-gutter: stable;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(251, 247, 242, 0.55) transparent;
+  overscroll-behavior: none;
+}
+#scroller::-webkit-scrollbar { width: 10px; background: transparent; }
+#scroller::-webkit-scrollbar-track { background: transparent; }
+#scroller::-webkit-scrollbar-thumb { background: rgba(251, 247, 242, 0.55); border-radius: 4px; border: 2px solid transparent; background-clip: padding-box; }
+#scroller.locked { overflow-y: hidden; }
+:root { --gutter: 10px; }
+html[data-theme='night'] { background: #0b1630; }
+
+body {
+  margin: 0;
+  height: 100%;
+  color: var(--fg);
+  font-family: 'Pretendard Variable', Pretendard, Jost, system-ui, sans-serif;
+  font-size: 16px;
+  line-height: 1.7;
+  letter-spacing: -0.01em;
+  -webkit-font-smoothing: antialiased;
+  overflow-x: hidden;
+}
+
+/* WebGL이 없는 환경: 하늘 그림을 바탕으로 깐다 */
+html.no-webgl body { background: #8b97a0 url('/sky/dusk.webp') center / cover fixed; }
+html.no-webgl[data-theme='night'] body { background-image: url('/sky/night.webp'); }
+
+p, dd, dt, span, h1, h2, h3, h4, li, a, button { word-break: keep-all; overflow-wrap: break-word; }
+h1, h2, h3, h4, p, ul, ol, dl, dd, figure { margin: 0; padding: 0; }
+ul, ol { list-style: none; }
+a { color: inherit; text-decoration: none; }
+button { font: inherit; color: inherit; background: none; border: 0; padding: 0; cursor: pointer; letter-spacing: inherit; text-transform: inherit; }
+img { display: block; max-width: 100%; }
+
+*:focus-visible {
+  outline: 2px solid var(--gold);
+  outline-offset: 3px;
+}
+
+@layer components {
+.page-x { padding-left: var(--page-x); padding-right: var(--page-x); }
+.balance { text-wrap: balance; }
+.fg { color: var(--fg); }
+.fg-soft { color: var(--fg-soft); }
+
+/* 유리 판: 흐림 12px, 반투명 면, 노이즈 덧칠. 테두리 대신 그림자와 면 색으로 구분 */
+.glass {
+  position: relative;
+  isolation: isolate;
+  background: var(--glass);
+  -webkit-backdrop-filter: blur(12px);
+  backdrop-filter: blur(12px);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-1);
+}
+.glass::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  border-radius: inherit;
+  background: url('/sky/noise.svg');
+  opacity: 0.16;
+  pointer-events: none;
+}
+.glass-strong { background: var(--glass-strong); }
+.elev-2 { box-shadow: var(--shadow-2); }
+
+/* 손을 올리면 그림자와 위치만 바뀐다 */
+.lift { transition: transform 400ms var(--ease-out), box-shadow 400ms var(--ease-out); }
+@media (hover: hover) {
+  .lift:hover { transform: translateY(-4px); box-shadow: var(--shadow-3); }
+}
+
+/* 전환 중 페이지 글자 감춤과 등장 */
+.ui-fade { transition: opacity 600ms var(--ease), transform 900ms var(--ease-out); }
+.ui-hidden { opacity: 0; pointer-events: none; transform: translateY(10px); }
+.ui-hidden, .ui-hidden * { pointer-events: none !important; }
+
+.text-link {
+  text-decoration: underline;
+  text-decoration-thickness: 1px;
+  text-underline-offset: 4px;
+}
+
+}
+
+.no-scrollbar { scrollbar-width: none; }
+.no-scrollbar::-webkit-scrollbar { display: none; }
+
+@media (prefers-reduced-motion: reduce) {
+  .ui-fade, .lift { transition-duration: 1ms; }
+  .ui-hidden { transform: none; }
+}
+
+/* 줄 수 고정: 글이 짧아도 정해진 줄 수만큼 자리를 잡고, 길면 마지막 줄에서 말줄임 */
+@layer components {
+  .lines-1, .lines-2, .lines-3 {
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+    overflow-wrap: anywhere;
+    word-break: keep-all;
+  }
+  .lines-1 { -webkit-line-clamp: 1; line-clamp: 1; min-height: 1lh; max-height: 1lh; }
+  .lines-2 { -webkit-line-clamp: 2; line-clamp: 2; min-height: 2lh; max-height: 2lh; }
+  .lines-3 { -webkit-line-clamp: 3; line-clamp: 3; min-height: 3lh; max-height: 3lh; }
+}
