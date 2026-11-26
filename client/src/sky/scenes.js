@@ -1,3 +1,5 @@
+import { SKY_THEME } from './theme'
+
 // 장면 설정. 층 수치는 역설계 보고서 2-4절, 카메라는 3-2절 값을 옮겼고 색은 포스터에서 뽑았다.
 // 모든 장면은 같은 구름 들판 하나를 공유한다. 장면을 바꿀 때 구름을 다시 만들지 않고
 // 카메라 자리와 방향, 색만 한 번의 비행으로 이어서 바꾼다(끊김과 되돌림 없음).
@@ -11,11 +13,21 @@ export const FIELD = [
 export const FIELD_EYE = [0, 600, 7000]
 
 // 색 묶음. far = 먼 쪽 구름을 누르는 색, near = 가까운 쪽, shade = 구름 그림에 곱하는 색
-export const PALETTES = {
-  dusk: { far: '#f4a48e', near: '#5f9fb6', shade: '#fff8f4', blend: 1.0, bg: '#7fa3b3', overlay: '#f6cfc0', topFar: '#cfe6ee', topNear: '#8cc4d6', topBlend: 1.2 },
-  dusk2: { far: '#f6b09a', near: '#6aa8bd', shade: '#fffaf6', blend: 0.9, bg: '#86a9b8', overlay: '#f7d9cc', topFar: '#d6eaf0', topNear: '#94c8d8', topBlend: 1.1 },
-  night: { far: '#4f68b4', near: '#24387a', shade: '#93a8dc', blend: 0.95, bg: '#0b1630', overlay: '#7186c4', topFar: '#33498e', topNear: '#1f3170', topBlend: 1.0 },
+const PALETTE_SETS = {
+  // 처음 만든 노을 색
+  v1: {
+    dusk: { far: '#f4a48e', near: '#5f9fb6', shade: '#fff8f4', blend: 1.0, bg: '#7fa3b3', overlay: '#f6cfc0', topFar: '#cfe6ee', topNear: '#8cc4d6', topBlend: 1.2 },
+    dusk2: { far: '#f6b09a', near: '#6aa8bd', shade: '#fffaf6', blend: 0.9, bg: '#86a9b8', overlay: '#f7d9cc', topFar: '#d6eaf0', topNear: '#94c8d8', topBlend: 1.1 },
+    night: { far: '#4f68b4', near: '#24387a', shade: '#93a8dc', blend: 0.95, bg: '#0b1630', overlay: '#7186c4', topFar: '#33498e', topNear: '#1f3170', topBlend: 1.0 },
+  },
+  // 포스터 색: 청록 하늘(#3d84a6 근처)과 분홍 구름(#f4b6a8 근처), 밤은 라벤더와 분홍이 도는 남색
+  poster: {
+    dusk: { far: '#f2a29c', near: '#3a82a6', shade: '#fff3f1', blend: 1.0, bg: '#4f93b4', overlay: '#f5c6c6', topFar: '#bfdfeb', topNear: '#559fc0', topBlend: 1.45 },
+    dusk2: { far: '#f4aea7', near: '#448cae', shade: '#fff5f3', blend: 0.95, bg: '#5a9cbb', overlay: '#f7d0cf', topFar: '#c7e3ed', topNear: '#62a8c6', topBlend: 1.35 },
+    night: { far: '#5763b6', near: '#1f2c6e', shade: '#9ba4dc', blend: 0.95, bg: '#0b1534', overlay: '#8e8fcf', topFar: '#323f8e', topNear: '#1c2968', topBlend: 1.0 },
+  },
 }
+export const PALETTES = PALETTE_SETS[SKY_THEME]
 
 const mobileTilt = () => (typeof window !== 'undefined' && window.innerWidth <= 767 ? -0.1 : 0)
 const aspectFix = () => (typeof window !== 'undefined' ? 16 / 9 - window.innerWidth / window.innerHeight : 0)

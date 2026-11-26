@@ -3,6 +3,7 @@ import gsap from 'gsap'
 import { CloudLayer } from './CloudLayer'
 import { Overlay } from './Overlay'
 import { FIELD, FIELD_EYE, SCENES, PALETTES, movementFor } from './scenes'
+import { SKY_TEXTURES } from './theme'
 import { backdropVertex, backdropFragment } from './shaders'
 
 THREE.ColorManagement.enabled = false
@@ -17,8 +18,6 @@ function loadTexture(loader, url) {
     loader.load(url, t => resolve(t), undefined, reject)
   })
 }
-const bell = t => Math.sin(Math.PI * Math.min(1, Math.max(0, t))) // 0에서 1로 올랐다 0으로
-const wrapAngle = a => Math.atan2(Math.sin(a), Math.cos(a))
 
 // 장면 하나가 아니라 "하늘 하나". 구름 들판은 처음 한 번만 만들고 끝까지 그대로 둔다.
 // 장면 이동은 카메라 자리, 방향, 색, 밤 정도를 한 번의 비행으로 이어서 바꾸는 일이다.
@@ -57,7 +56,7 @@ export class World {
     }
 
     this.store = { pos: { x: 0, y: 0, z: 0 }, rot: { x: 0, y: 0, z: 0 } }
-    this.flight = { t: 0, lift: 0, swing: { x: 0, y: 0, z: 0 } } // 비행 중 곡선(오르내림과 기울기)
+    this.flight = { t: 0, lift: 0, forward: 0, swing: { x: 0, y: 0, z: 0 } } // 비행 중 값(forward: 바라보는 쪽으로 밀려 나간 거리)
     this.speed = { mul: 1 } // 구름이 다가오는 속도 배율(비행 중 크게)
     this.mix = { night: 0, houses: 0 }
     this.mouse = { x: window.innerWidth / 2, y: window.innerHeight / 2 }
@@ -83,7 +82,7 @@ export class World {
     const loader = new THREE.TextureLoader()
     const [cloud, dusk] = await Promise.all([
       loadTexture(loader, '/sky/cloud.webp'),
-      loadTexture(loader, '/sky/dusk.webp'),
+      loadTexture(loader, SKY_TEXTURES.dusk),
     ])
     for (const t of [cloud, dusk]) t.colorSpace = THREE.NoColorSpace
     this.tex = { cloud, dusk }
@@ -94,7 +93,7 @@ export class World {
     this.buildField()
     this.buildStars()
     // 밤 하늘과 집 그림은 첫 화면 뒤에 받는다
-    this.nightPromise = loadTexture(loader, '/sky/night.webp').then(t => {
+    this.nightPromise = loadTexture(loader, SKY_TEXTURES.night).then(t => {
       t.colorSpace = THREE.NoColorSpace
       this.tex.night = t
       this.backdrop.material.uniforms.uNight.value = t
@@ -389,66 +388,53 @@ export class World {
       return
     }
 
+    // 원본(We Are SKY) 순서를 그대로 따른다.
+    // 1) 떠나기: 가려는 쪽으로 고개를 틀며(위는 들고, 왼쪽은 왼쪽으로) 그쪽으로 빨라지며 날아간다.
+    // 2) 덮개 구름이 화면을 다 가린 순간(3.25초) 새 장면으로 바꾼다.
+    // 3) 도착하기: 날아오던 쪽에서 조금 벗어난 자리에서 출발해, 그 방향으로 계속 미끄러지며 제자리에 멈춘다.
+    // 그래서 왼쪽으로 가면 끝까지 왼쪽으로 가는 것처럼 보이고, 중간에 반대로 꺾이는 지점이 없다.
     const e = movementFor(direction)
     const D = duration
-    const fromPos = { ...this.store.pos }
-    const fromRot = { ...this.store.rot }
-    const dy = wrapAngle(t.rot.y - fromRot.y)
-    const toRot = { x: t.rot.x, y: fromRot.y + dy, z: t.rot.z }
+    const outro = (D / 2) * 1.3
+    const intro = D * (t.cfg.introFactor ?? 2) * 0.7
+    const r0 = { ...this.store.rot }
     const fromPal = this.snapshotPalette()
     const toPal = this.paletteTargets(t.cfg.palette)
     const fromNight = this.mix.night
     const fromHouses = this.mix.houses
     const fromStars = this.stars.material.opacity
-    // 위쪽 장면은 천장 구름 속으로 솟고, 나머지는 아래 구름 바다 속으로 잠긴다
-    const up = e.x > 0
-    const depth = up ? 1300 : -700
-    const swing = { x: up ? e.x * 0.18 : -0.07, y: e.y * 0.55, z: e.z * 0.9 }
+    this.flight.lift = 0
+    this.flight.swing.x = this.flight.swing.y = this.flight.swing.z = 0
+    this.flight.forward = 0
 
-    this.trackMouse = false
-    const o = { t: 0 }
-    const tl = gsap.timeline({ onComplete: () => { this.trackMouse = true } })
-    // 몸통 이동: 하나의 곡선(시작 천천히, 가운데 빠르게, 끝 천천히)
-    tl.to(o, {
-      t: 1, duration: D, ease: 'power2.inOut',
-      onUpdate: () => {
-        const k = o.t
-        this.store.pos.x = fromPos.x + (t.pos.x - fromPos.x) * k
-        this.store.pos.y = fromPos.y + (t.pos.y - fromPos.y) * k
-        this.store.pos.z = fromPos.z + (t.pos.z - fromPos.z) * k
-        this.store.rot.x = fromRot.x + (toRot.x - fromRot.x) * k
-        this.store.rot.y = fromRot.y + (toRot.y - fromRot.y) * k
-        this.store.rot.z = fromRot.z + (toRot.z - fromRot.z) * k
-      },
-    }, 0)
-    // 오르내림과 진행 방향으로 틀기: 한 번 올라갔다 내려오는 종 모양(되돌아 꺾이는 지점 없음)
-    const f = { t: 0 }
-    tl.to(f, {
-      t: 1, duration: D, ease: 'sine.inOut',
-      onUpdate: () => {
-        const b = bell(f.t)
-        const b2 = b * b * (3 - 2 * b) // 가운데를 더 오래 머물게
-        this.flight.lift = depth * b2
-        this.flight.swing.x = swing.x * b
-        this.flight.swing.y = swing.y * b
-        this.flight.swing.z = swing.z * b
-      },
-    }, 0)
-    // 구름이 쏟아져 들어오는 속도: 앞 45%에서 올리고 뒤 55%에서 내린다
-    tl.to(this.speed, { mul: 34, duration: D * 0.45, ease: 'power2.in' }, 0)
-    tl.to(this.speed, { mul: 1, duration: D * 0.55, ease: 'power3.out' }, D * 0.45)
-    // 색과 밤 정도, 별, 집: 비행 15%부터 90%까지 이어서
+    const tl = gsap.timeline()
+    tl.call(() => { this.trackMouse = false }, null, (D / 2) * 0.2)
+    tl.to(this.store.rot, { x: r0.x + e.x * 1.5, y: r0.y + e.y, z: r0.z + e.z, duration: outro, ease: 'power2.in' }, 0)
+    tl.to(this.flight, { forward: 3000, duration: outro, ease: 'power2.in' }, 0)
+    // 색과 밤 정도, 별, 집은 덮개가 화면을 가리는 동안(0.4T에서 0.8T) 바꾼다
     const c = { t: 0 }
     tl.to(c, {
-      t: 1, duration: D * 0.75, ease: 'sine.inOut',
+      t: 1, duration: D * 0.4, ease: 'sine.inOut',
       onUpdate: () => {
         this.setPaletteMix(fromPal, toPal, c.t)
         this.mix.night = fromNight + (t.night - fromNight) * c.t
-        this.mix.houses = fromHouses + (t.houses - fromHouses) * Math.min(1, c.t * 2)
-        this.stars.material.opacity = fromStars + (t.stars - fromStars) * c.t * c.t
+        this.mix.houses = fromHouses + (t.houses - fromHouses) * c.t
+        this.stars.material.opacity = fromStars + (t.stars - fromStars) * c.t
         this.applyHouses()
       },
-    }, D * 0.15)
+    }, D * 0.4)
+    tl.call(() => {
+      this.flight.forward = 0
+      const p = t.pos
+      const r = t.rot
+      Object.assign(this.store.pos, { x: p.x + e.y * 500, y: p.y - e.x * 1000, z: p.z + e.forward })
+      Object.assign(this.store.rot, { x: r.x + e.x * 0.25, y: r.y - e.y * 0.25, z: r.z + e.z })
+      this.trackMouse = true
+      const back = gsap.timeline()
+      back.to(this.store.pos, { x: p.x, y: p.y, z: p.z, duration: intro, ease: 'power2.out' }, 0)
+      back.to(this.store.rot, { x: r.x, y: r.y, z: r.z, duration: intro, ease: 'power2.out' }, 0)
+      this.timelines.push(back)
+    }, null, outro)
     this.timelines.push(tl)
   }
 
@@ -500,6 +486,7 @@ export class World {
       this.store.rot.z + s.z + this.mouseOff.y * 0.5,
     )
     cam.position.set(this.store.pos.x, this.store.pos.y + this.flight.lift, this.store.pos.z)
+    if (this.flight.forward) cam.translateZ(-this.flight.forward)
     this.shared.uCamZ.value = cam.position.z
 
     for (const l of this.layers) l.update(dt60, this.time, cam.position.z)
