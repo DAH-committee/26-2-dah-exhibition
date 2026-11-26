@@ -1,5 +1,6 @@
-import { useCallback, useState } from 'react'
+import { Fragment, useCallback, useState } from 'react'
 import { useParams } from 'react-router-dom'
+import { ArrowUpRight } from 'lucide-react'
 import Page from '../components/Page'
 import SkyLink from '../components/SkyLink'
 import Lightbox from '../components/Lightbox'
@@ -56,12 +57,12 @@ export default function WorkDetailPage() {
       </section>
 
       {/* 본문: 왼쪽 단(약 37%)에 작품 설명, 오른쪽 단(53% 지점부터)에 참여 학생과 정보 */}
-      <section className="page-x mt-s9 grid grid-cols-1 gap-s8 md:grid-cols-12 md:gap-x-s5">
+      <section className="page-x mt-s7 grid grid-cols-1 gap-s6 md:grid-cols-12 md:gap-x-s5">
         <div className="md:col-span-5">
           <p className="t-lead fg balance">{work.description}</p>
         </div>
-        <div className="flex flex-col gap-s7 md:col-span-5 md:col-start-7">
-          <dl className="grid grid-cols-[88px_1fr] gap-x-s5 gap-y-s3">
+        <div className="flex flex-col gap-s5 md:col-span-5 md:col-start-7">
+          <dl className="grid grid-cols-[72px_1fr] gap-x-s4 gap-y-s2">
             <dt className="t-label fg-soft pt-[3px]">과목</dt>
             <dd className="t-body fg">{work.subjectName}</dd>
             {work.members.length > 1 && work.author && (
@@ -71,45 +72,37 @@ export default function WorkDetailPage() {
               </>
             )}
             <dt className="t-label fg-soft pt-[3px]">{work.members.length > 1 ? '팀원' : '이름'}</dt>
-            <dd className="flex flex-col gap-s3">
+            <dd className="flex flex-col gap-s2">
               {work.members.map(m => (
-                <span key={`${m.name}${m.studentId}`} className="flex flex-col">
+                <span key={`${m.name}${m.studentId}`} className="flex flex-wrap items-baseline gap-x-s3">
                   <span className="t-body fg">{m.name}</span>
-                  {(m.studentId || m.major) && (
-                    <span className="t-small fg-soft">{[m.studentId, m.major].filter(Boolean).join(', ')}</span>
-                  )}
+                  {m.studentId && <span className="t-small fg-soft">{m.studentId}</span>}
+                  {m.major && <span className="t-small fg-soft">{m.major}</span>}
                 </span>
               ))}
             </dd>
+            {work.links.map(l => (
+              <Fragment key={l.url}>
+                <dt className="t-label fg-soft pt-[3px]">{KIND[l.kind] || 'LINK'}</dt>
+                <dd>
+                  <a href={l.url} target="_blank" rel="noreferrer" className="t-body fg text-link inline-flex items-center gap-s1" aria-label={`${l.label} 열기`}>
+                    {l.label} <ArrowUpRight size={16} aria-hidden="true" />
+                  </a>
+                </dd>
+              </Fragment>
+            ))}
           </dl>
-          {work.links.length > 0 && (
-            <div>
-              <h2 className="t-heading fg">작품 바로가기</h2>
-              <ul className="mt-s4 grid grid-cols-1 gap-s3 sm:grid-cols-2">
-                {work.links.map(l => (
-                  <li key={l.url}>
-                    <a href={l.url} target="_blank" rel="noreferrer" className="glass lift group flex h-full flex-col justify-between gap-s5 p-s4" aria-label={`${l.label} 열기`}>
-                      <span className="t-label fg-soft">{KIND[l.kind] || 'LINK'}</span>
-                      <span className="flex flex-col gap-s1">
-                        <span className="t-heading fg lines-2 transition-transform duration-300 ease-out group-hover:translate-x-[3px]">{l.label}</span>
-                      </span>
-                    </a>
-                  </li>
-                ))}
-              </ul>
-            </div>
-          )}
         </div>
       </section>
 
       {pages.length > 0 && (
-        <section className={`page-x mt-s9 grid gap-s5 ${pages.length > 1 ? 'grid-cols-1 md:grid-cols-3' : 'grid-cols-1 md:grid-cols-12'}`} aria-label="작품 이미지">
+        <section className={`page-x mt-s7 grid gap-s4 ${pages.length > 1 ? 'grid-cols-1 md:grid-cols-3' : 'grid-cols-1 md:grid-cols-12'}`} aria-label="작품 이미지">
           {pages.map((src, i) => (
             <button
               key={src}
               type="button"
               onClick={() => setZoom(src)}
-              className={`glass lift block overflow-hidden p-s2 md:p-s3 ${pages.length > 1 ? '' : 'md:col-span-7'}`}
+              className={`glass lift block overflow-hidden p-s2 ${pages.length > 1 ? '' : 'md:col-span-7'}`}
               aria-label={`${work.title} 이미지 ${i + 1} 크게 보기`}
             >
               <img src={src} alt={`${work.title} 이미지 ${i + 1}`} loading="lazy" decoding="async" className="w-full rounded" style={{ aspectRatio: '1 / 1.414', objectFit: 'cover' }} />
