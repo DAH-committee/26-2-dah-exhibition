@@ -8,7 +8,7 @@ import { useSky } from '../sky/SkyProvider'
 import { posterOf, thumbOf } from '../utils'
 
 const KIND = { web: 'WEB', notion: 'NOTION', video: 'VIDEO', doc: 'DOC' }
-// 개인 작품은 이름, 팀 작품은 팀명만
+// 첫 화면 아래 한 줄: 개인 작품은 이름, 팀 작품은 팀명
 const byline = w => (w.members.length > 1 ? w.author : w.members[0]?.name || w.author) || ''
 
 export default function WorkDetailPage() {
@@ -64,12 +64,23 @@ export default function WorkDetailPage() {
           <dl className="grid grid-cols-[88px_1fr] gap-x-s5 gap-y-s3">
             <dt className="t-label fg-soft pt-[3px]">과목</dt>
             <dd className="t-body fg">{work.subjectName}</dd>
-            {byline(work) && (
+            {work.members.length > 1 && work.author && (
               <>
-                <dt className="t-label fg-soft pt-[3px]">{work.members.length > 1 ? '팀' : '이름'}</dt>
-                <dd className="t-body fg">{byline(work)}</dd>
+                <dt className="t-label fg-soft pt-[3px]">팀</dt>
+                <dd className="t-body fg">{work.author}</dd>
               </>
             )}
+            <dt className="t-label fg-soft pt-[3px]">{work.members.length > 1 ? '팀원' : '이름'}</dt>
+            <dd className="flex flex-col gap-s3">
+              {work.members.map(m => (
+                <span key={`${m.name}${m.studentId}`} className="flex flex-col">
+                  <span className="t-body fg">{m.name}</span>
+                  {(m.studentId || m.major) && (
+                    <span className="t-small fg-soft">{[m.studentId, m.major].filter(Boolean).join(', ')}</span>
+                  )}
+                </span>
+              ))}
+            </dd>
           </dl>
           {work.links.length > 0 && (
             <div>
