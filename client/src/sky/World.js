@@ -388,83 +388,55 @@ export class World {
       return
     }
 
-    // 한 번의 끊김 없는 비행. 카메라를 옮겨 놓거나(순간 이동) 덮개로 가리지 않는다.
-    // 위치: 지금 자리에서 출발해 가려는 쪽으로 고개를 튼 방향으로 나아가고, 도착 장면이 바라보는
-    //       방향으로 미끄러져 들어오는 하나의 곡선(3차 베지어). 속도가 처음부터 끝까지 이어진다.
-    // 방향: 가는 쪽으로 기울며 돌다가 도착 방향으로 풀린다. 도착 장면도 같은 쪽을 바라보게 맞춰 두어
-    //       중간에 반대로 꺾이는 지점이 없다.
-    // 위아래: 위쪽 장면은 천장 구름 속을, 아래쪽 장면은 아래 구름 바다 속을, 옆 장면은 구름 꼭대기를 스치며 지난다.
-    // 들판은 카메라를 따라 앞에서 계속 채워지므로 앞으로 멀리 날아가도 구름이 끊기지 않는다.
+    // SKY 사이트와 같은 순서(2026. 11. 26. 원본을 0.25초 간격으로 찍어 확인).
+    // 1) 0초~3.25초: 가려는 쪽으로 고개를 틀고(수평선이 기울어짐) 그쪽으로 빨라지며 실제 구름 속으로 날아 들어간다.
+    // 2) 2초~2.75초에 덮개가 차올라 2.75초~4초 동안 화면이 빈틈 없이 구름 속으로 덮이고, 그 사이 3.25초에 새 장면으로 바뀐다.
+    // 3) 4초부터 덮개가 걷히며 기울어진 수평선이 드러나고, 날아오던 쪽에서 같은 방향으로 계속 미끄러지며 바로 선다.
     const e = movementFor(direction)
     const D = duration
-    const TRAVEL = 4800
-    const from = { ...this.store.pos }
+    const outro = (D / 2) * 1.3
+    const intro = D * (t.cfg.introFactor ?? 2) * 0.7
     const r0 = { ...this.store.rot }
-    const r1 = { ...t.rot }
-    r1.y = r0.y + Math.atan2(Math.sin(r1.y - r0.y), Math.cos(r1.y - r0.y))
-    const to = { x: t.pos.x, y: t.pos.y, z: from.z - TRAVEL }
-    const fwd = (yaw, pitch, len) => ({
-      x: -Math.sin(yaw) * Math.cos(pitch) * len,
-      y: Math.sin(pitch) * len,
-      z: -Math.cos(yaw) * Math.cos(pitch) * len,
-    })
-    const a = fwd(r0.y + e.y * 0.55, e.x * 0.35, 2200)
-    const b = fwd(r1.y, r1.x, 1800)
-    const P1 = { x: from.x + a.x, y: from.y + a.y, z: from.z + a.z }
-    const P2 = { x: to.x - b.x, y: to.y - b.y, z: to.z - b.z }
-    const bez = (p0, p1, p2, p3, u) => {
-      const v = 1 - u
-      return v * v * v * p0 + 3 * v * v * u * p1 + 3 * v * u * u * p2 + u * u * u * p3
-    }
-    // 오르내림: 위는 천장 구름 속까지, 아래는 구름 바다 속까지, 옆은 구름 꼭대기를 스칠 만큼
-    const dip = e.x > 0 ? 1500 : e.x < 0 ? -950 : -420
-    const bell = u => Math.sin(Math.PI * u)
-
     const fromPal = this.snapshotPalette()
     const toPal = this.paletteTargets(t.cfg.palette)
     const fromNight = this.mix.night
     const fromHouses = this.mix.houses
     const fromStars = this.stars.material.opacity
-    this.flight.forward = 0
     this.flight.lift = 0
     this.flight.swing.x = this.flight.swing.y = this.flight.swing.z = 0
-    this.trackMouse = false
+    this.flight.forward = 0
 
-    const o = { u: 0 }
-    const tl = gsap.timeline({ onComplete: () => { this.trackMouse = true; this.flight.swing.x = this.flight.swing.y = this.flight.swing.z = 0; this.flight.lift = 0 } })
-    tl.to(o, {
-      u: 1, duration: D, ease: 'power2.inOut',
-      onUpdate: () => {
-        const u = o.u
-        this.store.pos.x = bez(from.x, P1.x, P2.x, to.x, u)
-        this.store.pos.y = bez(from.y, P1.y, P2.y, to.y, u)
-        this.store.pos.z = bez(from.z, P1.z, P2.z, to.z, u)
-        const k = u * u * (3 - 2 * u)
-        this.store.rot.x = r0.x + (r1.x - r0.x) * k
-        this.store.rot.y = r0.y + (r1.y - r0.y) * k
-        this.store.rot.z = r0.z + (r1.z - r0.z) * k
-        const w = bell(u)
-        this.flight.lift = dip * w * w * (3 - 2 * w)
-        this.flight.swing.x = e.x * 0.42 * w
-        this.flight.swing.y = e.y * 0.38 * w
-        this.flight.swing.z = e.z * 0.85 * w
-      },
-    }, 0)
-    // 구름이 스쳐 지나가는 속도: 가운데에서 가장 빠르게
-    tl.to(this.speed, { mul: 7, duration: D * 0.45, ease: 'power2.in' }, 0)
-    tl.to(this.speed, { mul: 1, duration: D * 0.55, ease: 'power2.out' }, D * 0.45)
-    // 색과 밤 정도: 비행 내내 이어서(구름 속에 있는 가운데에서 가장 많이 바뀜)
+    const tl = gsap.timeline()
+    tl.call(() => { this.trackMouse = false }, null, (D / 2) * 0.2)
+    // 원본은 power2.in이지만, 실제 SKY 화면은 누른 직후부터 기울기가 보여 한 단계 부드러운 곡선(power1.in)을 쓴다
+    tl.to(this.store.rot, { x: r0.x + e.x * 1.5, y: r0.y + e.y, z: r0.z + e.z, duration: outro, ease: 'power1.in' }, 0)
+    tl.to(this.flight, { forward: 3000, duration: outro, ease: 'power1.in' }, 0)
+    tl.to(this.speed, { mul: 8, duration: outro, ease: 'power1.in' }, 0)
+    // 색과 밤 정도는 화면이 덮여 있는 동안 바꾼다
     const c = { t: 0 }
     tl.to(c, {
-      t: 1, duration: D * 0.7, ease: 'sine.inOut',
+      t: 1, duration: D * 0.35, ease: 'sine.inOut',
       onUpdate: () => {
         this.setPaletteMix(fromPal, toPal, c.t)
         this.mix.night = fromNight + (t.night - fromNight) * c.t
-        this.mix.houses = fromHouses + (t.houses - fromHouses) * Math.min(1, c.t * 1.6)
-        this.stars.material.opacity = fromStars + (t.stars - fromStars) * c.t * c.t
+        this.mix.houses = fromHouses + (t.houses - fromHouses) * c.t
+        this.stars.material.opacity = fromStars + (t.stars - fromStars) * c.t
         this.applyHouses()
       },
-    }, D * 0.15)
+    }, D * 0.45)
+    tl.call(() => {
+      this.flight.forward = 0
+      const p = t.pos
+      const r = t.rot
+      Object.assign(this.store.pos, { x: p.x + e.y * 500, y: p.y - e.x * 1000, z: p.z + e.forward })
+      Object.assign(this.store.rot, { x: r.x + e.x * 0.25, y: r.y - e.y * 0.25, z: r.z + e.z })
+      this.trackMouse = true
+      const back = gsap.timeline()
+      back.to(this.store.pos, { x: p.x, y: p.y, z: p.z, duration: intro, ease: 'power2.out' }, 0)
+      back.to(this.store.rot, { x: r.x, y: r.y, z: r.z, duration: intro, ease: 'power2.out' }, 0)
+      back.to(this.speed, { mul: 1, duration: intro * 0.6, ease: 'power2.out' }, 0)
+      this.timelines.push(back)
+    }, null, outro)
     this.timelines.push(tl)
   }
 

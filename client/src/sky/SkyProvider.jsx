@@ -3,12 +3,12 @@ import { useLocation, useNavigate } from 'react-router-dom'
 import { World } from './World'
 import { SCENES, sceneForPath, directionBetween } from './scenes'
 
-// 전환 시간표(초). 기본 전환 T = 5초(보고서 1-3).
-// 0 출발, 2.0 덮개 구름 등장, 2.5 가운데 단어, 3.25 장면 교체, 4.0 덮개 걷힘,
-// 4.6 로고와 메뉴, 5.25 페이지 글자(원본 5.75초에서 0.5초 당김).
-const T = 5
-const AT = { cover: T * 0.4, word: T * 0.5, swap: (T / 2) * 1.3, uncover: T * 0.8, chrome: 4.6, ui: 5.25 }
-const WORD_HOLD = T * 0.35 // 단어가 나타나는 데 1.75초, 사라지는 데 1.75초
+// 전환 시간표(초). T = 3.6초 기준: 0 출발, 1.44 덮개 차오름(2.2초까지 완전히 덮임), 1.8 가운데 단어,
+// 2.34 장면 교체, 2.95 덮개가 1.5초 동안 천천히 걷힘, 4.32 로고와 메뉴, 4.75 페이지 글자.
+// SKY 사이트 실측(2026. 11. 26. 0.25초 간격 캡처): 누른 뒤 약 1.5초에 완전히 덮이고 약 3.1초에 걷히기 시작한다
+const T = 3.6
+const AT = { cover: T * 0.4, word: T * 0.5, swap: (T / 2) * 1.3, uncover: T * 0.82, chrome: T * 1.2, ui: T * 1.32 }
+const WORD_HOLD = T * 0.35 // 단어가 나타나는 데 1.26초, 사라지는 데 1.26초
 
 const SkyContext = createContext(null)
 const themeOf = key => (SCENES[key]?.palette === 'night' ? 'night' : 'dusk')
@@ -61,6 +61,7 @@ export function SkyProvider({ children }) {
       return undefined
     }
     worldRef.current = world
+    if (import.meta.env.DEV) window.__sky = world // 개발 점검용
     if (import.meta.env.DEV) window.__world = world
     world.load().then(async () => {
       if (disposed) return
@@ -111,6 +112,9 @@ export function SkyProvider({ children }) {
     setFlying(dir !== 'None')
     world.flyTo(key, { direction: dir, duration: D })
     if (dir !== 'None') {
+      world.overlayStart(SCENES[fromKey]?.palette, SCENES[key]?.palette, D)
+      later(D * 0.3, () => world.overlayFade(1, 0.55))
+      later(D * 0.62, () => world.overlayFade(0, 0.7))
     }
     later(D * 0.8, () => setChrome(true))
     later(D * 0.92, () => { setUi(true); setFlying(false) })
@@ -138,14 +142,16 @@ export function SkyProvider({ children }) {
       return
     }
 
-    // 장면 사이 이동: 시작부터 끝까지 한 번의 비행(world.flyTo). 화면을 덮는 구름 없이 실제 구름 사이를 지난다.
-    // 중간(3.25초)에는 주소와 글자만 바꾼다.
+    // 장면 사이 이동(SKY와 같은 순서): 날아 들어가 2.75초~4초 동안 구름 속으로 완전히 덮이고, 3.25초에 장면과 주소를 바꾼다.
     const dir = directionBetween(fromKey, toKey)
     busy.current = true
     setFlying(true)
     setUi(false)
     setChrome(false)
     world.flyTo(toKey, { direction: dir, duration: T })
+    world.overlayStart(SCENES[fromKey]?.palette, SCENES[toKey]?.palette, T)
+    later(AT.cover, () => world.overlayFade(1, 0.75))
+    later(AT.uncover, () => world.overlayFade(0, 1.5)) // SKY처럼 천천히 걷히며 기울어진 수평선이 드러난다
     later(AT.word, () => setWord({ text: SCENES[toKey]?.word ?? '', on: true }))
     later(AT.word + WORD_HOLD, () => setWord(w => ({ ...w, on: false })))
     later(AT.swap, () => {

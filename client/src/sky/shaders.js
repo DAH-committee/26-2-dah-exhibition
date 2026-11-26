@@ -125,3 +125,54 @@ void main() {
   gl_FragColor = vec4(col, a * vAlpha * uOpacity);
 }
 `
+
+// 구름 속(화면 전체): SKY처럼 완전히 덮이는 순간을 만든다. 구름 결이 화면 가운데에서 바깥으로
+// 계속 커지며 지나가(앞으로 날아 들어가는 느낌), 평평한 막이 아니라 구름 속처럼 보인다.
+export const fillVertex = /* glsl */ `
+varying vec2 vUv;
+void main() {
+  vUv = uv;
+  gl_Position = vec4(position.xy, 0.0, 1.0);
+}
+`
+
+export const fillFragment = /* glsl */ `
+uniform vec3 uTint;
+uniform float uOpacity;
+uniform float uTime;
+uniform vec2 uHalf;
+uniform float uRoll;
+varying vec2 vUv;
+float hash(vec2 p) { return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453); }
+float noise(vec2 p) {
+  vec2 i = floor(p), f = fract(p);
+  vec2 u = f * f * (3.0 - 2.0 * f);
+  return mix(mix(hash(i), hash(i + vec2(1.0, 0.0)), u.x), mix(hash(i + vec2(0.0, 1.0)), hash(i + vec2(1.0, 1.0)), u.x), u.y);
+}
+float fbm(vec2 p) {
+  float v = 0.0, a = 0.5;
+  for (int i = 0; i < 5; i++) { v += a * noise(p); p = p * 2.03 + 17.0; a *= 0.5; }
+  return v;
+}
+// 확대가 끝없이 이어지는 구름 결(두 층을 번갈아 키우며 섞음)
+float zoomClouds(vec2 p, float t) {
+  float k = fract(t);
+  float s1 = exp2(k), s2 = exp2(k - 1.0);
+  float a = fbm(p / s1 * 2.2 + 3.1);
+  float b = fbm(p / s2 * 2.2 + 9.7);
+  return mix(a, b, smoothstep(0.0, 1.0, k));
+}
+void main() {
+  vec2 p = (vUv - 0.5) * vec2(uHalf.x / uHalf.y, 1.0);
+  float cr = cos(uRoll), sr = sin(uRoll);
+  p = vec2(p.x * cr - p.y * sr, p.x * sr + p.y * cr);
+  float n = zoomClouds(p, uTime * 0.55);
+  float n2 = zoomClouds(p * 0.6 + 4.0, uTime * 0.35 + 0.5);
+  float shade = 0.78 + 0.22 * smoothstep(0.25, 0.8, n * 0.65 + n2 * 0.35);
+  vec3 base = mix(uTint, vec3(1.0), 0.62);
+  vec3 col = base * shade;
+  // 덮개가 반쯤 올라왔을 때부터 차오르고, 다 올라오면 빈틈 없이 덮는다
+  float a = smoothstep(0.35, 1.0, uOpacity);
+  gl_FragColor = vec4(col, a);
+}
+`

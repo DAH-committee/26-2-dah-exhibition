@@ -1,5 +1,5 @@
 import * as THREE from 'three'
-import { overlayVertex, overlayFragment } from './shaders'
+import { overlayVertex, overlayFragment, fillVertex, fillFragment } from './shaders'
 
 const rand = (a, b) => a + Math.random() * (b - a)
 
@@ -43,6 +43,25 @@ export class Overlay {
       depthTest: false,
       depthWrite: false,
     })
+    // 화면 전체 구름 속 층(맨 아래). 색과 불투명도는 위 구름 판들과 같은 값을 함께 쓴다
+    this.fillMaterial = new THREE.ShaderMaterial({
+      uniforms: {
+        uTint: this.material.uniforms.uTint,
+        uOpacity: this.material.uniforms.uOpacity,
+        uHalf: this.material.uniforms.uHalf,
+        uRoll: this.material.uniforms.uRoll,
+        uTime: { value: 0 },
+      },
+      vertexShader: fillVertex,
+      fragmentShader: fillFragment,
+      transparent: true,
+      depthTest: false,
+      depthWrite: false,
+    })
+    this.fill = new THREE.Mesh(new THREE.PlaneGeometry(2, 2), this.fillMaterial)
+    this.fill.frustumCulled = false
+    this.fill.renderOrder = -1
+    this.scene.add(this.fill)
     this.mesh = new THREE.Mesh(geo, this.material)
     this.mesh.frustumCulled = false
     this.scene.add(this.mesh)
@@ -76,7 +95,7 @@ export class Overlay {
     if (tint) this.material.uniforms.uTint.value.copy(tint)
     for (let i = 0; i < this.count; i++) {
       this.seed(i, rand(0.15, 1.0))
-      this.alpha[i] = rand(0.22, 0.5)
+      this.alpha[i] = rand(0.4, 0.8) // 원본 값(0.4~0.8)
       this.spin[i] = THREE.MathUtils.degToRad(rand(-0.25, 0.25))
     }
     this.elapsed = 0
@@ -93,6 +112,7 @@ export class Overlay {
     if (!this.running) return
     this.elapsed += dt
     const u = this.material.uniforms
+    this.fillMaterial.uniforms.uTime.value = this.elapsed
     u.uCenter.value.set(-turn * this.w * 0.9, 0)
     u.uRoll.value = roll
     // 점점 빨라졌다가(앞으로 쏟아짐) 덮개가 걷힐 무렵 느려진다
@@ -114,5 +134,7 @@ export class Overlay {
   dispose() {
     this.geo.dispose()
     this.material.dispose()
+    this.fill.geometry.dispose()
+    this.fillMaterial.dispose()
   }
 }
