@@ -3,10 +3,12 @@ import { overlayVertex, overlayFragment, fillVertex, fillFragment } from './shad
 
 const rand = (a, b) => a + Math.random() * (b - a)
 
-// 장면 전환 때 화면 앞을 스치는 구름. 진행 방향(화면 가운데)에서 바깥으로 퍼지며 다가온다.
-// 3D 구름 들판과 같은 방향으로 날아가는 것처럼 보이게 해서, 덮개가 켜지고 꺼질 때 따로 노는 느낌을 없앤다.
+// 장면 전환 때 화면을 덮고 지나가는 구름 벽(SKY 원본 TransitionGenerator와 같은 방식).
+// 구름 판 수백 장을 진행 방향 앞쪽(화면 밖)에 두었다가 한 방향으로 흘려 화면을 가로질러 반대편으로 빠져나가게 한다.
+// 흐름은 시간이 갈수록 빨라지고(누적 프레임에 비례), 덮개 전체를 진행 방향 각도와 카메라 기울기만큼 돌린다.
+// 왼쪽으로 가면 구름이 오른쪽으로, 위로 가면 아래로 지나간다.
 export class Overlay {
-  constructor(texture, count = 260) {
+  constructor(texture, count = 450) {
     this.count = count
     this.scene = new THREE.Scene()
     this.camera = new THREE.OrthographicCamera(-1, 1, 1, -1, 0, 1)
@@ -15,17 +17,17 @@ export class Overlay {
     geo.index = quad.index
     geo.setAttribute('position', quad.getAttribute('position'))
     geo.setAttribute('uv', quad.getAttribute('uv'))
-    this.dir = new Float32Array(count * 2)
-    this.z = new Float32Array(count)
+    this.pos = new Float32Array(count * 2)
     this.angle = new Float32Array(count)
-    this.alpha = new Float32Array(count)
     this.size = new Float32Array(count)
+    this.alpha = new Float32Array(count)
+    this.y0 = new Float32Array(count)
+    this.speed = new Float32Array(count)
     this.spin = new Float32Array(count)
-    geo.setAttribute('aDir', new THREE.InstancedBufferAttribute(this.dir, 2))
-    geo.setAttribute('aZ', new THREE.InstancedBufferAttribute(this.z, 1))
+    geo.setAttribute('aPos', new THREE.InstancedBufferAttribute(this.pos, 2))
     geo.setAttribute('aAngle', new THREE.InstancedBufferAttribute(this.angle, 1))
-    geo.setAttribute('aAlpha', new THREE.InstancedBufferAttribute(this.alpha, 1))
     geo.setAttribute('aSize', new THREE.InstancedBufferAttribute(this.size, 1))
+    geo.setAttribute('aAlpha', new THREE.InstancedBufferAttribute(this.alpha, 1))
     geo.instanceCount = count
     this.geo = geo
     this.material = new THREE.ShaderMaterial({
@@ -33,9 +35,9 @@ export class Overlay {
         uMap: { value: texture },
         uTint: { value: new THREE.Color('#ffffff') },
         uOpacity: { value: 0 },
-        uHalf: { value: new THREE.Vector2(720, 450) },
-        uCenter: { value: new THREE.Vector2(0, 0) },
-        uRoll: { value: 0 },
+        uSize: { value: new THREE.Vector2(1440, 900) },
+        uRot: { value: 0 },
+        uScroll: { value: 0 },
       },
       vertexShader: overlayVertex,
       fragmentShader: overlayFragment,
@@ -43,14 +45,14 @@ export class Overlay {
       depthTest: false,
       depthWrite: false,
     })
-    // 화면 전체 구름 속 층(맨 아래). 색과 불투명도는 위 구름 판들과 같은 값을 함께 쓴다
+    // 화면 전체 구름 속 층(맨 아래). 구름 판과 같은 방향, 같은 속도로 흘러 빈틈 없이 덮는다
     this.fillMaterial = new THREE.ShaderMaterial({
       uniforms: {
         uTint: this.material.uniforms.uTint,
         uOpacity: this.material.uniforms.uOpacity,
-        uHalf: this.material.uniforms.uHalf,
-        uRoll: this.material.uniforms.uRoll,
-        uTime: { value: 0 },
+        uSize: this.material.uniforms.uSize,
+        uRot: this.material.uniforms.uRot,
+        uScroll: this.material.uniforms.uScroll,
       },
       vertexShader: fillVertex,
       fragmentShader: fillFragment,
@@ -67,6 +69,10 @@ export class Overlay {
     this.scene.add(this.mesh)
     this.running = false
     this.elapsed = 0
+    this.frames = 0
+    this.dirDeg = 0
+    this.w = 1440
+    this.h = 900
   }
 
   get opacity() {
@@ -76,53 +82,54 @@ export class Overlay {
   resize(w, h) {
     this.w = w
     this.h = h
-    this.material.uniforms.uHalf.value.set(w / 2, h / 2)
+    this.material.uniforms.uSize.value.set(w, h)
   }
 
-  seed(i, z) {
-    const { w, h } = this
-    const a = rand(0, Math.PI * 2)
-    // 가운데를 비우지 않도록 반지름은 0부터, 화면 대각선 쪽으로 넉넉히
-    const r = Math.sqrt(Math.random()) * Math.hypot(w, h) * 0.32
-    this.dir[i * 2] = Math.cos(a) * r
-    this.dir[i * 2 + 1] = Math.sin(a) * r * 0.8
-    this.z[i] = z
-    this.angle[i] = rand(0, Math.PI * 2)
-    this.size[i] = h * rand(0.32, 0.55)
-  }
-
-  start({ tint } = {}) {
+  // 원본 값: 판 크기 = 3 x (창 높이/1080)^2 x 4 x 128px, 출발 위치는 가로 -2W~2W, 세로 -2H~2H에서 2H만큼 앞쪽
+  start({ tint, dirDeg = 0 } = {}) {
     if (tint) this.material.uniforms.uTint.value.copy(tint)
+    const { w, h } = this
+    const k = h / 1080
+    const size = 3 * k * k * 4 * 128
+    this.dirDeg = dirDeg
     for (let i = 0; i < this.count; i++) {
-      this.seed(i, rand(0.15, 1.0))
-      this.alpha[i] = rand(0.4, 0.8) // 원본 값(0.4~0.8)
-      this.spin[i] = THREE.MathUtils.degToRad(rand(-0.25, 0.25))
+      this.pos[i * 2] = rand(-2 * w, 2 * w)
+      this.y0[i] = rand(-2 * h, 2 * h) - 2 * h
+      this.pos[i * 2 + 1] = this.y0[i]
+      this.angle[i] = rand(0, Math.PI * 2)
+      this.size[i] = size * rand(0.9, 1.1)
+      this.alpha[i] = rand(0.85, 1.0)
+      this.speed[i] = rand(10, 40)
+      this.spin[i] = THREE.MathUtils.degToRad(rand(1, 2))
     }
     this.elapsed = 0
+    this.frames = 0
+    this.scroll = 0
     this.running = true
     this.markDirty()
   }
 
   markDirty() {
-    for (const k of ['aDir', 'aZ', 'aAngle', 'aAlpha', 'aSize']) this.geo.getAttribute(k).needsUpdate = true
+    for (const k of ['aPos', 'aAngle', 'aAlpha', 'aSize']) this.geo.getAttribute(k).needsUpdate = true
   }
 
-  // turn: 비행 중 좌우로 트는 양(라디안). 진행 방향 쪽으로 퍼짐 중심을 옮긴다.
-  update(dt, turn = 0, roll = 0) {
+  // roll: 3D 카메라의 기울기(라디안). 원본처럼 덮개 각도에 더한다
+  update(dt, _turn = 0, roll = 0) {
     if (!this.running) return
     this.elapsed += dt
+    const f = dt * 60
+    this.frames += f
     const u = this.material.uniforms
-    this.fillMaterial.uniforms.uTime.value = this.elapsed
-    u.uCenter.value.set(-turn * this.w * 0.9, 0)
-    u.uRoll.value = roll
-    // 점점 빨라졌다가(앞으로 쏟아짐) 덮개가 걷힐 무렵 느려진다
-    const t = this.elapsed
-    const rate = 0.22 + 0.55 * Math.min(1, t / 2.2)
+    u.uRot.value = THREE.MathUtils.degToRad(this.dirDeg) + roll
+    const dpr = Math.min(window.devicePixelRatio || 1, 2)
+    const k = (this.h / 1080) * dpr * f * this.frames * 0.005
     for (let i = 0; i < this.count; i++) {
-      this.z[i] -= rate * dt * (0.7 + (i % 7) * 0.08)
-      if (this.z[i] < 0.06) this.seed(i, 1.0)
-      this.angle[i] += this.spin[i] * dt * 60
+      this.pos[i * 2 + 1] += this.speed[i] * k
+      this.angle[i] += this.spin[i] * f
     }
+    // 구름 속 층도 같은 흐름(평균 속도 25)으로 민다
+    this.scroll += 25 * k
+    u.uScroll.value = this.scroll
     this.markDirty()
   }
 

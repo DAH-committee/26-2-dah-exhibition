@@ -2,7 +2,7 @@ import * as THREE from 'three'
 import gsap from 'gsap'
 import { CloudLayer } from './CloudLayer'
 import { Overlay } from './Overlay'
-import { FIELD, FIELD_EYE, SCENES, PALETTES, movementFor } from './scenes'
+import { FIELD, FIELD_EYE, SCENES, PALETTES, DIR_DEGREES, movementFor } from './scenes'
 import { SKY_TEXTURES } from './theme'
 import { backdropVertex, backdropFragment } from './shaders'
 
@@ -87,7 +87,7 @@ export class World {
     for (const t of [cloud, dusk]) t.colorSpace = THREE.NoColorSpace
     this.tex = { cloud, dusk }
     // 덮개 구름도 같은 큰 그림을 쓴다(작은 그림을 크게 늘리면 뭉개져 평평한 안개처럼 보였다)
-    this.overlay = new Overlay(cloud, this.mobile ? 110 : 170)
+    this.overlay = new Overlay(cloud, this.mobile ? 240 : 450) // 원본 450장
     this.overlay.resize(window.innerWidth, window.innerHeight)
     this.buildBackdrop()
     this.buildField()
@@ -442,11 +442,11 @@ export class World {
 
   // ── 덮개 구름(화면 앞을 스쳐 지나가는 2D 구름) ─────────────
 
-  overlayStart(fromPalette, toPalette, duration = 5) {
+  overlayStart(fromPalette, toPalette, duration = 5, direction = 'Up') {
     if (!this.overlay || this.reduced) return
     const fromC = new THREE.Color(PALETTES[fromPalette]?.overlay ?? '#ffffff')
     const toC = new THREE.Color(PALETTES[toPalette]?.overlay ?? '#ffffff')
-    this.overlay.start({ tint: fromC })
+    this.overlay.start({ tint: fromC, dirDeg: DIR_DEGREES[direction] ?? 0 })
     const tint = this.overlay.material.uniforms.uTint.value
     const o = { t: 0 }
     gsap.to(o, {

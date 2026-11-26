@@ -112,7 +112,7 @@ export function SkyProvider({ children }) {
     setFlying(dir !== 'None')
     world.flyTo(key, { direction: dir, duration: D })
     if (dir !== 'None') {
-      world.overlayStart(SCENES[fromKey]?.palette, SCENES[key]?.palette, D)
+      world.overlayStart(SCENES[fromKey]?.palette, SCENES[key]?.palette, D, dir)
       later(D * 0.3, () => world.overlayFade(1, 0.55))
       later(D * 0.62, () => world.overlayFade(0, 0.7))
     }
@@ -149,7 +149,7 @@ export function SkyProvider({ children }) {
     setUi(false)
     setChrome(false)
     world.flyTo(toKey, { direction: dir, duration: T })
-    world.overlayStart(SCENES[fromKey]?.palette, SCENES[toKey]?.palette, T)
+    world.overlayStart(SCENES[fromKey]?.palette, SCENES[toKey]?.palette, T, dir)
     later(AT.cover, () => world.overlayFade(1, 0.75))
     later(AT.uncover, () => world.overlayFade(0, 1.5)) // SKY처럼 천천히 걷히며 기울어진 수평선이 드러난다
     later(AT.word, () => setWord({ text: SCENES[toKey]?.word ?? '', on: true }))
