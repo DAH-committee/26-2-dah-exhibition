@@ -1,6 +1,5 @@
-import { Fragment, useCallback, useState } from 'react'
+import { useCallback, useState } from 'react'
 import { useParams } from 'react-router-dom'
-import { ArrowUpRight } from 'lucide-react'
 import Page from '../components/Page'
 import SkyLink from '../components/SkyLink'
 import Lightbox from '../components/Lightbox'
@@ -8,7 +7,6 @@ import { useExhibition } from '../data/useExhibition'
 import { useSky } from '../sky/SkyProvider'
 import { posterOf, thumbOf } from '../utils'
 
-const KIND = { web: 'WEB', notion: 'NOTION', video: 'VIDEO', doc: 'DOC' }
 // 첫 화면 아래 한 줄: 개인 작품은 이름, 팀 작품은 팀명
 const byline = w => (w.members.length > 1 ? w.author : w.members[0]?.name || w.author) || ''
 
@@ -81,16 +79,18 @@ export default function WorkDetailPage() {
                 </span>
               ))}
             </dd>
-            {work.links.map(l => (
-              <Fragment key={l.url}>
-                <dt className="t-label fg-soft pt-[3px]">{KIND[l.kind] || 'LINK'}</dt>
-                <dd>
-                  <a href={l.url} target="_blank" rel="noreferrer" className="t-body fg text-link inline-flex items-center gap-s1" aria-label={`${l.label} 열기`}>
-                    {l.label} <ArrowUpRight size={16} aria-hidden="true" />
-                  </a>
+            {work.links.length > 0 && (
+              <>
+                <dt className="t-label fg-soft pt-[12px]">바로가기</dt>
+                <dd className="flex flex-wrap gap-s2">
+                  {work.links.map(l => (
+                    <a key={l.url} href={l.url} target="_blank" rel="noreferrer" className="glass btn-soft t-small fg">
+                      {l.label}
+                    </a>
+                  ))}
                 </dd>
-              </Fragment>
-            ))}
+              </>
+            )}
           </dl>
         </div>
       </section>

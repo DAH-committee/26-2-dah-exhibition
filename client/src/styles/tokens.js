@@ -28,7 +28,7 @@ export const font = {
 export const type = {
   display: { fontFamily: font.sans, fontWeight: 500, fontSize: 'clamp(44px, 8.9vw, 128px)', lineHeight: '1', letterSpacing: '0.02em', textTransform: 'uppercase' }, // 전환 단어(DUSK, NIGHT)와 같은 굵기
   word: { fontFamily: font.sans, fontWeight: 500, fontSize: 'clamp(52px, 8.9vw, 128px)', lineHeight: '1', letterSpacing: '0.02em', textTransform: 'uppercase' },
-  pageTitle: { fontFamily: font.sans, fontWeight: 300, fontSize: 'clamp(40px, 6.2vw, 96px)', lineHeight: '1', letterSpacing: '-0.01em', textTransform: 'uppercase' },
+  pageTitle: { fontFamily: font.sans, fontWeight: 500, fontSize: 'clamp(40px, 6.2vw, 96px)', lineHeight: '1', letterSpacing: '0.02em', textTransform: 'uppercase' }, // 홈 제목과 같은 굵기
   caseTitle: { fontFamily: font.sans, fontWeight: 500, fontSize: 'clamp(30px, 4.6vw, 72px)', lineHeight: '1.2', letterSpacing: '-0.02em' },
   date: { fontFamily: font.sans, fontWeight: 300, fontSize: 'clamp(28px, 3.4vw, 48px)', lineHeight: '1', letterSpacing: '0' },
   lead: { fontFamily: font.body, fontWeight: 300, fontSize: 'clamp(22px, 2.5vw, 34px)', lineHeight: '1.55', letterSpacing: '-0.02em' },

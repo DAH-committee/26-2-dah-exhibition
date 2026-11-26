@@ -150,7 +150,7 @@ export function SkyProvider({ children }) {
     setChrome(false)
     world.flyTo(toKey, { direction: dir, duration: T })
     world.overlayStart(SCENES[fromKey]?.palette, SCENES[toKey]?.palette, T, dir)
-    later(AT.cover, () => world.overlayFade(1, 0.75))
+    later(AT.cover, () => world.overlayFade(1, 0.95))
     later(AT.uncover, () => world.overlayFade(0, 1.5)) // SKY처럼 천천히 걷히며 기울어진 수평선이 드러난다
     later(AT.word, () => setWord({ text: SCENES[toKey]?.word ?? '', on: true }))
     later(AT.word + WORD_HOLD, () => setWord(w => ({ ...w, on: false })))

@@ -122,7 +122,8 @@ export class Overlay {
     const u = this.material.uniforms
     u.uRot.value = THREE.MathUtils.degToRad(this.dirDeg) + roll
     const dpr = Math.min(window.devicePixelRatio || 1, 2)
-    const k = (this.h / 1080) * dpr * f * this.frames * 0.005
+    // 원본 계수 0.005. 덮는 속도가 조금 빠르게 느껴져 0.0042로 낮춘다
+    const k = (this.h / 1080) * dpr * f * this.frames * 0.0042
     for (let i = 0; i < this.count; i++) {
       this.pos[i * 2 + 1] += this.speed[i] * k
       this.angle[i] += this.spin[i] * f

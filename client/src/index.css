@@ -123,6 +123,19 @@ img { display: block; max-width: 100%; }
   .lift:hover { transform: translateY(-4px); box-shadow: var(--shadow-3); }
 }
 
+/* 작은 버튼: 유리판 바탕, 그림자 1단, 화살표와 밑줄 없음. 손을 올리면 살짝 떠오른다 */
+.btn-soft {
+  display: inline-flex;
+  align-items: center;
+  min-height: 40px;
+  padding: 0 16px;
+  font-weight: 500;
+  transition: transform 300ms var(--ease-out), box-shadow 300ms var(--ease-out);
+}
+@media (hover: hover) {
+  .btn-soft:hover { transform: translateY(-2px); box-shadow: var(--shadow-2); }
+}
+
 /* 전환 중 페이지 글자 감춤과 등장 */
 .ui-fade { transition: opacity 600ms var(--ease), transform 900ms var(--ease-out); }
 .ui-hidden { opacity: 0; pointer-events: none; transform: translateY(10px); }

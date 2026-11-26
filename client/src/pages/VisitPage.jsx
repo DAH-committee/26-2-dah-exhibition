@@ -1,4 +1,3 @@
-import { ArrowUpRight } from 'lucide-react'
 import Page from '../components/Page'
 import { EXHIBITION } from '../data/exhibition'
 
@@ -34,11 +33,11 @@ export default function VisitPage() {
               <ul>{EXHIBITION.partners.map(p => <li key={p}>{p}</li>)}</ul>
             </dd>
           </dl>
-          <ul className="flex flex-wrap gap-x-s6 gap-y-s2">
+          <ul className="flex flex-wrap gap-s2">
             {MAPS.map(m => (
               <li key={m.url}>
-                <a href={m.url} target="_blank" rel="noreferrer" className="t-body fg text-link inline-flex items-center gap-s1">
-                  {m.label} <ArrowUpRight size={16} aria-hidden="true" />
+                <a href={m.url} target="_blank" rel="noreferrer" className="glass btn-soft t-small fg">
+                  {m.label}
                 </a>
               </li>
             ))}

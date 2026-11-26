@@ -1,33 +1,56 @@
 import { useState } from 'react'
 import Page from '../components/Page'
 import Lightbox from '../components/Lightbox'
-import { EXHIBITION, POSTER_STORY } from '../data/exhibition'
+
+// 2026-2 공모전 두 곳. 1학기 Contest 화면처럼 공모전 이름, 최우수작 그림, 공모전 사이트 버튼만 둔다
+const CONTESTS = [
+  {
+    id: 'exlibris',
+    title: '장서표 디자인 공모전',
+    image: { src: '/about/bookplate-donghae-best.png', width: 420, height: 596, alt: '장서표 디자인 공모전 최우수상 「동해를 읽다」, 여동규' },
+    link: 'https://dah-bookplate-design-contest.vercel.app/bookplate_contest_26-2.html',
+  },
+  {
+    id: 'poster',
+    title: '전시회 포스터 공모전',
+    image: { src: '/about/poster-one-star-per-house.jpg', width: 1414, height: 2000, alt: '전시회 포스터 공모전 최우수상 「One Star per House」, 주현호' },
+    link: 'https://beyond-the-known-dah.vercel.app/',
+  },
+]
 
 export default function ContestPage() {
-  const [zoom, setZoom] = useState(false)
-  const { poster } = EXHIBITION
+  const [zoom, setZoom] = useState(null)
   return (
     <Page title="Contest" className="pb-s10">
-      <div className="page-x grid grid-cols-1 gap-s8 pt-[calc(var(--top-bar)+8px)] md:grid-cols-12 md:gap-x-s5 md:pt-[calc(var(--top-bar)+16px)]">
-        <figure className="md:col-span-5">
-          <button type="button" onClick={() => setZoom(true)} className="glass lift block w-full p-s3" aria-label="포스터 크게 보기">
-            <img src={poster.src} alt="포스터 One Star per House" width="1414" height="2000" className="w-full rounded" style={{ aspectRatio: '1414 / 2000' }} />
-          </button>
-        </figure>
-        <div className="flex flex-col gap-s6 md:col-span-6 md:col-start-7 md:pt-s8">
-          <h1 className="t-page-title fg">Contest</h1>
-          <dl className="grid grid-cols-[72px_1fr] gap-x-s5 gap-y-s3">
-            <dt className="t-label fg-soft pt-[4px]">공모전</dt>
-            <dd className="t-body fg">2026-2 전시회 포스터 공모전</dd>
-            <dt className="t-label fg-soft pt-[4px]">최우수상</dt>
-            <dd className="t-body fg">「{poster.title}」, {poster.author}</dd>
-          </dl>
-          <h2 className="t-serif-title fg">{poster.title}</h2>
-          {POSTER_STORY.map(p => <p key={p} className="t-body fg max-w-text">{p}</p>)}
-          <p className="t-body fg max-w-text">포스터의 색과 장면에서 시작한 전시 사이트의 하늘과 구름, 별자리</p>
-        </div>
+      <div className="page-x pt-[calc(var(--top-bar)+8px)] md:pt-[calc(var(--top-bar)+16px)]">
+        <h1 className="t-page-title fg">Contest</h1>
+        <ul className="mt-s8 grid grid-cols-1 gap-s8 md:grid-cols-2 md:gap-x-s7">
+          {CONTESTS.map(c => (
+            <li key={c.id} className="flex flex-col items-center gap-s5 text-center">
+              <h2 className="t-heading fg">{c.title}</h2>
+              <button
+                type="button"
+                onClick={() => setZoom(c.image)}
+                className="glass lift block w-full max-w-[360px] p-s2"
+                aria-label={`${c.image.alt} 크게 보기`}
+              >
+                <img
+                  src={c.image.src}
+                  alt={c.image.alt}
+                  width={c.image.width}
+                  height={c.image.height}
+                  className="w-full rounded"
+                  style={{ aspectRatio: '1 / 1.414', objectFit: 'cover' }}
+                />
+              </button>
+              <a href={c.link} target="_blank" rel="noreferrer" className="glass btn-soft t-small fg">
+                공모전 보러가기
+              </a>
+            </li>
+          ))}
+        </ul>
       </div>
-      <Lightbox src={zoom ? poster.src : null} alt="포스터 One Star per House" onClose={() => setZoom(false)} />
+      <Lightbox src={zoom?.src ?? null} alt={zoom?.alt ?? ''} onClose={() => setZoom(null)} />
     </Page>
   )
 }

@@ -66,7 +66,7 @@ export const SCENES = {
   contest: {
     sky: 'dusk', palette: 'dusk', skyDist: 9000,
     cam: () => ({ pos: [2500, 400, 7500], rot: [0.03, -0.45, 0] }),
-    introFactor: 2, word: 'POSTER',
+    introFactor: 2, word: 'CONTEST',
   },
   lucid: {
     sky: 'dusk', palette: 'dusk2', skyDist: 9000, flipX: true,
