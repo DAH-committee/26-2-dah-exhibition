@@ -24,7 +24,7 @@ export default function ContestPage() {
           </dl>
           <h2 className="t-serif-title fg">{poster.title}</h2>
           {POSTER_STORY.map(p => <p key={p} className="t-body fg max-w-text">{p}</p>)}
-          <p className="t-body fg max-w-text">이 포스터의 색과 장면이 전시 사이트의 하늘과 구름, 별자리가 되었습니다.</p>
+          <p className="t-body fg max-w-text">포스터의 색과 장면에서 시작한 전시 사이트의 하늘과 구름, 별자리</p>
         </div>
       </div>
       <Lightbox src={zoom ? poster.src : null} alt="포스터 One Star per House" onClose={() => setZoom(false)} />

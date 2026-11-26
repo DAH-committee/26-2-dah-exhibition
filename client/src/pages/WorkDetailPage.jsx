@@ -25,7 +25,7 @@ export default function WorkDetailPage() {
     return (
       <Page title="Works" className="page-x flex min-h-[100svh] flex-col justify-center gap-s5">
         <h1 className="t-page-title fg">Works</h1>
-        <p className="t-body fg">찾는 작품이 목록에 없습니다.</p>
+        <p className="t-body fg">존재하지 않는 작품</p>
         <SkyLink to="/works" className="t-nav fg text-link w-max">작품 목록</SkyLink>
       </Page>
     )
