@@ -14,6 +14,7 @@ export class CloudLayer {
     this.cfg = cfg
     this.motion = motion
     this.clouds = []
+    this.ref = eye.z // 들판을 만들 때의 카메라 z. 카메라가 앞으로 날아가면 들판도 그만큼 따라간다
     this.geometry = new THREE.PlaneGeometry(cfg.w, cfg.h)
 
     const base = new THREE.ShaderMaterial({
@@ -93,8 +94,10 @@ export class CloudLayer {
         const tri = p < 1 ? p : 2 - p
         c.position.x = u.x0 + u.dx * easeInOut(tri)
       }
-      if (c.position.z > cfg.end) {
-        c.position.z = cfg.start + ((c.position.z - cfg.start) % span)
+      // 카메라 뒤로 지나간 판은 카메라 앞 먼 곳에서 다시 시작한다(카메라가 멀리 날아가도 들판이 끊기지 않게)
+      const off = camZ - this.ref
+      if (c.position.z > cfg.end + off) {
+        c.position.z = cfg.start + off + ((c.position.z - cfg.start - off) % span)
         c.lookAt(this.eye)
       }
       c.renderOrder = c.position.z

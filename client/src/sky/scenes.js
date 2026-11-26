@@ -7,7 +7,7 @@ import { SKY_THEME } from './theme'
 // 아래층과 위층(천장) 구름
 export const FIELD = [
   { start: -8000, end: 8000, width: 14000, density: 0.02, speed: 6, w: 1100, h: 1000, y: -600, fade: 15000, curve: 3000, scale: 0.000058 },
-  { start: -4000, end: 6000, width: 20000, density: 0.035, speed: 3, w: 3000, h: 2000, y: 2500, fade: 12000, curve: 10000, invert: true, scale: 0, opacity: 0.45 },
+  { start: -4000, end: 6000, width: 20000, density: 0.035, speed: 3, w: 3000, h: 2000, y: 2500, fade: 12000, curve: 10000, invert: true, scale: 0, opacity: SKY_THEME === 'poster' ? 0.24 : 0.45 }, // 새 색은 포스터처럼 맑은 청록 하늘이 보이게 천장 구름을 옅게
 ]
 // 구름 판이 바라보는 기준점(보고서: 생성 때 카메라 출발점을 lookAt)
 export const FIELD_EYE = [0, 600, 7000]
@@ -22,8 +22,8 @@ const PALETTE_SETS = {
   },
   // 포스터 색: 청록 하늘(#3d84a6 근처)과 분홍 구름(#f4b6a8 근처), 밤은 라벤더와 분홍이 도는 남색
   poster: {
-    dusk: { far: '#f2a29c', near: '#3a82a6', shade: '#fff3f1', blend: 1.0, bg: '#4f93b4', overlay: '#f5c6c6', topFar: '#bfdfeb', topNear: '#559fc0', topBlend: 1.45 },
-    dusk2: { far: '#f4aea7', near: '#448cae', shade: '#fff5f3', blend: 0.95, bg: '#5a9cbb', overlay: '#f7d0cf', topFar: '#c7e3ed', topNear: '#62a8c6', topBlend: 1.35 },
+    dusk: { far: '#dfaea2', near: '#3a7f9c', shade: '#fbefea', blend: 1.0, bg: '#4a8aa6', overlay: '#e9cbc2', topFar: '#6ea9c1', topNear: '#2a6e8b', topBlend: 1.8 },
+    dusk2: { far: '#e4b6aa', near: '#4288a5', shade: '#fcf2ee', blend: 0.95, bg: '#5292ad', overlay: '#ecd2ca', topFar: '#7ab1c7', topNear: '#337894', topBlend: 1.7 },
     night: { far: '#5763b6', near: '#1f2c6e', shade: '#9ba4dc', blend: 0.95, bg: '#0b1534', overlay: '#8e8fcf', topFar: '#323f8e', topNear: '#1c2968', topBlend: 1.0 },
   },
 }
@@ -45,7 +45,7 @@ export const SCENES = {
   },
   works: {
     sky: 'night', palette: 'night', skyDist: 9000,
-    cam: () => ({ pos: [-2000, 300, 8000], rot: [0, -0.3, 0] }),
+    cam: () => ({ pos: [-2000, 300, 8000], rot: [0, 0.3, 0] }), // 왼쪽으로 날아와 왼쪽을 바라봄
     introFactor: 2, word: 'NIGHT', stars: true,
   },
   about: {
@@ -55,7 +55,7 @@ export const SCENES = {
   },
   awards: {
     sky: 'dusk', palette: 'dusk', skyDist: 9000, flipX: true,
-    cam: () => ({ pos: [2000, 300, 8000], rot: [0, 0.3, 0] }),
+    cam: () => ({ pos: [2000, 300, 8000], rot: [0, -0.3, 0] }), // 오른쪽으로 날아와 오른쪽을 바라봄
     introFactor: 2, word: 'SHINE',
   },
   visit: {
@@ -65,12 +65,12 @@ export const SCENES = {
   },
   contest: {
     sky: 'dusk', palette: 'dusk', skyDist: 9000,
-    cam: () => ({ pos: [2500, 400, 7500], rot: [0.03, 0.45, 0] }),
+    cam: () => ({ pos: [2500, 400, 7500], rot: [0.03, -0.45, 0] }),
     introFactor: 2, word: 'POSTER',
   },
   lucid: {
     sky: 'dusk', palette: 'dusk2', skyDist: 9000, flipX: true,
-    cam: () => ({ pos: [-2500, 400, 7500], rot: [0.03, -0.45, 0] }),
+    cam: () => ({ pos: [-2500, 400, 7500], rot: [0.03, 0.45, 0] }),
     introFactor: 2, word: 'LUCID',
   },
 }

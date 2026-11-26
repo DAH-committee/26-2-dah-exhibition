@@ -111,9 +111,6 @@ export function SkyProvider({ children }) {
     setFlying(dir !== 'None')
     world.flyTo(key, { direction: dir, duration: D })
     if (dir !== 'None') {
-      world.overlayStart(SCENES[fromKey]?.palette, SCENES[key]?.palette, D)
-      later(D * 0.3, () => world.overlayFade(1, 0.55))
-      later(D * 0.62, () => world.overlayFade(0, 0.7))
     }
     later(D * 0.8, () => setChrome(true))
     later(D * 0.92, () => { setUi(true); setFlying(false) })
@@ -141,15 +138,14 @@ export function SkyProvider({ children }) {
       return
     }
 
-    // 장면 사이 이동: 시작부터 끝까지 한 번의 비행(world.flyTo). 중간(3.25초)에는 주소와 글자만 바꾼다.
+    // 장면 사이 이동: 시작부터 끝까지 한 번의 비행(world.flyTo). 화면을 덮는 구름 없이 실제 구름 사이를 지난다.
+    // 중간(3.25초)에는 주소와 글자만 바꾼다.
     const dir = directionBetween(fromKey, toKey)
     busy.current = true
     setFlying(true)
     setUi(false)
     setChrome(false)
     world.flyTo(toKey, { direction: dir, duration: T })
-    world.overlayStart(SCENES[fromKey]?.palette, SCENES[toKey]?.palette, T)
-    later(AT.cover, () => world.overlayFade(1, 0.75))
     later(AT.word, () => setWord({ text: SCENES[toKey]?.word ?? '', on: true }))
     later(AT.word + WORD_HOLD, () => setWord(w => ({ ...w, on: false })))
     later(AT.swap, () => {
@@ -157,7 +153,6 @@ export function SkyProvider({ children }) {
       sceneRef.current = toKey
       setTheme(toKey)
     })
-    later(AT.uncover, () => world.overlayFade(0, 0.75))
     later(AT.chrome, () => setChrome(true))
     later(AT.ui, () => { setUi(true); setFlying(false); busy.current = false })
   }, [navigate, reduced])

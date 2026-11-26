@@ -26,7 +26,7 @@ export const font = {
 
 // 글자 역할. 크기는 1440 폭 값과 390 폭 값 사이를 clamp로 잇는다(보고서 5-2 비율).
 export const type = {
-  display: { fontFamily: font.sans, fontWeight: 300, fontSize: 'clamp(44px, 8.9vw, 128px)', lineHeight: '1', letterSpacing: '-0.01em', textTransform: 'uppercase' },
+  display: { fontFamily: font.sans, fontWeight: 500, fontSize: 'clamp(44px, 8.9vw, 128px)', lineHeight: '1', letterSpacing: '0.02em', textTransform: 'uppercase' }, // 전환 단어(DUSK, NIGHT)와 같은 굵기
   word: { fontFamily: font.sans, fontWeight: 500, fontSize: 'clamp(52px, 8.9vw, 128px)', lineHeight: '1', letterSpacing: '0.02em', textTransform: 'uppercase' },
   pageTitle: { fontFamily: font.sans, fontWeight: 300, fontSize: 'clamp(40px, 6.2vw, 96px)', lineHeight: '1', letterSpacing: '-0.01em', textTransform: 'uppercase' },
   caseTitle: { fontFamily: font.sans, fontWeight: 500, fontSize: 'clamp(30px, 4.6vw, 72px)', lineHeight: '1.2', letterSpacing: '-0.02em' },

@@ -42,7 +42,8 @@ void main() {
   float dist = uCamZ - vWorld.z;
   vec3 col = tex.rgb * uShade;
   col = pressToward(col, uFar, dist / uFade * uBlend);
-  col = pressToward(col, uNear, vWorld.z / uFade * uBlend);
+  // 가까운 쪽 색은 카메라와의 거리로 누른다(카메라가 어디로 날아가도 같은 색)
+  col = pressToward(col, uNear, (vWorld.z - uCamZ + 7000.0) / uFade * uBlend);
 
   alpha *= uOpacity * clamp((uFade - dist) / (uFade * 0.5), 0.0, 1.0);
   gl_FragColor = vec4(col, alpha);
