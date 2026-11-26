@@ -7,6 +7,8 @@ export const EXHIBITION = {
   venue: '한림대학교 일송기념도서관 C.Square',
   address: '강원특별자치도 춘천시 한림대학길 1, 한림대학교 일송기념도서관',
   partners: ['HUSS X 디지털인문예술', 'SW중심대학사업단', '디지털인문학연구소'],
+  // 전시 최종 포스터(인쇄본과 같은 그림, PNG 긴 변 2400px)
+  finalPoster: { src: '/about/poster-26-2.png', width: 1697, height: 2400 },
   poster: {
     src: '/about/poster-one-star-per-house.jpg',
     title: 'One Star per House',

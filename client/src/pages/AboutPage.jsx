@@ -15,14 +15,14 @@ export default function AboutPage() {
             type="button"
             onClick={() => setZoom(true)}
             className="glass lift block w-full p-s2 md:h-full md:w-auto"
-            style={{ aspectRatio: '1414 / 2000' }}
+            style={{ aspectRatio: '1697 / 2400' }}
             aria-label="포스터 크게 보기"
           >
             <img
-              src={EXHIBITION.poster.src}
-              alt="포스터 One Star per House: 분홍 구름 아래 옥상에 오른 사람들이 실에 매단 별을 하늘에 다는 장면"
-              width="1414"
-              height="2000"
+              src={EXHIBITION.finalPoster.src}
+              alt="2026-2 디지털인문예술전공 프로젝트 전시회 포스터: 분홍 구름 아래 옥상에 오른 사람들이 실에 매단 별을 하늘에 다는 장면"
+              width={EXHIBITION.finalPoster.width}
+              height={EXHIBITION.finalPoster.height}
               className="h-full w-full rounded object-cover"
             />
           </button>
@@ -42,7 +42,7 @@ export default function AboutPage() {
           </dl>
         </div>
       </div>
-      <Lightbox src={zoom ? EXHIBITION.poster.src : null} alt="포스터 One Star per House" onClose={() => setZoom(false)} />
+      <Lightbox src={zoom ? EXHIBITION.finalPoster.src : null} alt="2026-2 디지털인문예술전공 프로젝트 전시회 포스터" onClose={() => setZoom(false)} />
     </Page>
   )
 }
